@@ -8,7 +8,8 @@ from movies.models import Movie, Booking
 
 
 def home(request):
-    movies = Movie.objects.prefetch_related('genres', 'languages').order_by('-created_at')[:8]
+    # Database not ready or table doesn't exist yet
+    movies = []
     return render(request, 'home.html', {'movies': movies})
 
 
