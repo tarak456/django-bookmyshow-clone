@@ -1,0 +1,173 @@
+{% extends "users/basic.html" %}
+{% load movie_tags %}
+{% block title %}{{ movie.name }} — BookMySeat{% endblock %}
+
+{% block extra_head %}
+<style>
+  .movie-hero {
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    padding: 40px 0 60px;
+  }
+  .movie-hero .genre-pill {
+    background: rgba(255,255,255,.12); color: rgba(255,255,255,.8);
+    border-radius: 50px; padding: 4px 14px; font-size: .78rem;
+    display: inline-block; margin-right: 6px; margin-bottom: 4px;
+  }
+  .movie-meta-row {
+    display: flex; flex-wrap: wrap; gap: 18px; margin-top: 16px;
+  }
+  .meta-item { display: flex; align-items: center; gap: 7px; color: rgba(255,255,255,.7); font-size: .88rem; }
+  .meta-item i { color: var(--bms-red); }
+  .trailer-wrap {
+    position: relative; padding-top: 56.25%;
+    background: #000; border-radius: 12px; overflow: hidden;
+  }
+  .trailer-wrap iframe {
+    position: absolute; inset: 0; width: 100%; height: 100%; border: 0;
+  }
+  .trailer-fallback {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: #1a1a2e; color: rgba(255,255,255,.3);
+  }
+  .page-body { margin-top: -40px; }
+  .theater-card {
+    background: #fff; border-radius: 14px;
+    box-shadow: 0 4px 20px rgba(0,0,0,.08);
+    overflow: hidden; margin-bottom: 16px;
+  }
+  .theater-head {
+    padding: 18px 24px; border-bottom: 1px solid #f5f5f5;
+    display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+  }
+  .theater-name {
+    font-family: 'Poppins', sans-serif;
+    font-size: 1.05rem; font-weight: 700; color: #1a1a2e; margin-bottom: 6px;
+  }
+  .amenity {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: .76rem; color: #666; margin-right: 12px;
+  }
+  .time-btn {
+    border: 1.5px solid #28a745; border-radius: 8px;
+    padding: 10px 18px; text-align: center; text-decoration: none;
+    display: inline-block; min-width: 110px; transition: all .2s;
+    background: #fff; color: #1a1a2e;
+  }
+  .time-btn:hover {
+    background: #28a745; border-color: #28a745; color: #fff;
+    transform: translateY(-2px); box-shadow: 0 4px 12px rgba(40,167,69,.3);
+  }
+  .time-btn .time { font-family: 'Poppins', sans-serif; font-weight: 700; font-size: .95rem; display: block; }
+  .time-btn .seats { font-size: .7rem; color: inherit; opacity: .7; }
+  .non-cancel-notice {
+    background: #fffbf0; border: 1px solid #ffe082; border-radius: 8px;
+    padding: 10px 16px; font-size: .82rem; color: #856404;
+    display: flex; align-items: center; gap: 8px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Movie hero -->
+<div class="movie-hero">
+  <div class="container">
+    <nav aria-label="breadcrumb" style="margin-bottom:16px;">
+      <ol class="breadcrumb" style="background:transparent;padding:0;margin:0;">
+        <li class="breadcrumb-item"><a href="/movies" style="color:rgba(255,255,255,.5);text-decoration:none;font-size:.82rem;">Movies</a></li>
+        <li class="breadcrumb-item active" style="color:rgba(255,255,255,.7);font-size:.82rem;">{{ movie.name }}</li>
+      </ol>
+    </nav>
+    <div class="row g-4 align-items-start">
+      <div class="col-lg-8">
+        <h1 style="color:#fff;font-size:2rem;font-weight:800;margin-bottom:10px;font-family:'Poppins',sans-serif;">{{ movie.name }}</h1>
+        <div>
+          <span class="genre-pill"><i class="fas fa-star me-1" style="color:#f5a623;"></i>{{ movie.rating }}/10</span>
+          <span class="genre-pill">Hindi</span>
+          <span class="genre-pill">Action</span>
+          <span class="genre-pill">UA</span>
+        </div>
+        <div class="movie-meta-row">
+          <div class="meta-item"><i class="fas fa-users"></i><span>{{ movie.cast|truncatechars:50 }}</span></div>
+        </div>
+        {% if movie.description %}
+        <p style="color:rgba(255,255,255,.65);margin-top:14px;font-size:.88rem;line-height:1.7;max-width:580px;">{{ movie.description }}</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container page-body">
+  <div class="row g-4">
+
+    <!-- Trailer column -->
+    <div class="col-lg-5 mb-2">
+      <div style="background:#fff;border-radius:14px;box-shadow:0 4px 20px rgba(0,0,0,.08);overflow:hidden;">
+        <div style="padding:16px 20px;border-bottom:1px solid #f5f5f5;display:flex;align-items:center;gap:8px;">
+          <i class="fas fa-play-circle" style="color:var(--bms-red);font-size:1.1rem;"></i>
+          <span style="font-family:'Poppins',sans-serif;font-weight:700;color:#1a1a2e;">Official Trailer</span>
+        </div>
+        <div style="padding:16px;">
+          <!--
+            Security: URL validated at model-save. Filter re-validates video ID
+            with strict regex before any DOM output. Uses youtube-nocookie.com
+            with sandbox attribute. loading="lazy" for performance.
+          -->
+          <div class="trailer-wrap">{{ movie|youtube_embed }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Theaters column -->
+    <div class="col-lg-7">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <h5 style="font-family:'Poppins',sans-serif;font-weight:700;color:#1a1a2e;margin:0;">
+          <i class="fas fa-map-marker-alt me-2" style="color:var(--bms-red);"></i>Available Theaters
+        </h5>
+        <span style="font-size:.82rem;color:#888;">{{ theaters|length }} theater{{ theaters|length|pluralize }}</span>
+      </div>
+
+      {% if theaters %}
+        {% for theater in theaters %}
+        <div class="theater-card">
+          <div class="theater-head">
+            <div>
+              <div class="theater-name">{{ theater.name }}</div>
+              <div class="d-flex flex-wrap mt-1">
+                <span class="amenity"><i class="fas fa-mobile-alt text-success"></i>M-Ticket</span>
+                <span class="amenity"><i class="fas fa-utensils text-warning"></i>Food</span>
+                <span class="amenity"><i class="fas fa-parking text-primary"></i>Parking</span>
+                <span class="amenity"><i class="fas fa-wheelchair text-info"></i>Accessible</span>
+              </div>
+            </div>
+            <div class="d-flex flex-wrap gap-2 align-items-start">
+              <a href="{% url 'book_seats' theater.id %}" class="time-btn">
+                <span class="time">{{ theater.time|date:"H:i" }}</span>
+                <span class="seats">Available</span>
+              </a>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div style="background:#fff;border-radius:14px;padding:48px 24px;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,.06);">
+          <i class="fas fa-calendar-times fa-3x text-muted mb-3 d-block"></i>
+          <h5 style="color:#888;font-weight:600;">No Shows Available</h5>
+          <p style="color:#bbb;font-size:.88rem;">No theaters are currently showing this movie.</p>
+          <a href="/movies" class="btn btn-bms mt-2" style="border-radius:8px;padding:10px 24px;">
+            Browse Other Movies
+          </a>
+        </div>
+      {% endif %}
+
+      {% if theaters %}
+      <div class="non-cancel-notice mt-3">
+        <i class="fas fa-info-circle"></i>
+        <span>Tickets are <strong>non-cancellable</strong> after booking confirmation.</span>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Analytics Dashboard — BookMySeat Admin</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --sidebar-w: 240px;
+      --nav-h: 60px;
+      --bms-red: #e31e24;
+      --bms-dark: #0f172a;
+      --bms-mid: #1e293b;
+      --bms-border: #334155;
+      --text-muted-d: #94a3b8;
+      --card-bg: #1e293b;
+      --bg: #0f172a;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: #e2e8f0; min-height: 100vh; display: flex; }
+
+    /* ── Sidebar ─────────────────────────────────────── */
+    .sidebar {
+      width: var(--sidebar-w); min-height: 100vh;
+      background: var(--bms-mid); border-right: 1px solid var(--bms-border);
+      display: flex; flex-direction: column;
+      position: fixed; left: 0; top: 0; bottom: 0; z-index: 100;
+    }
+    .sidebar-brand {
+      padding: 20px 20px 16px;
+      border-bottom: 1px solid var(--bms-border);
+    }
+    .sidebar-brand .logo {
+      font-family: 'Poppins', sans-serif; font-weight: 800;
+      font-size: 1.1rem; color: #fff; text-decoration: none;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .sidebar-brand .logo span { color: var(--bms-red); }
+    .sidebar-brand .badge-admin {
+      background: rgba(227,30,36,.15); color: var(--bms-red);
+      border: 1px solid rgba(227,30,36,.3);
+      border-radius: 4px; font-size: .65rem; font-weight: 700;
+      padding: 2px 6px; letter-spacing: .5px;
+    }
+    .sidebar-nav { padding: 16px 12px; flex: 1; }
+    .nav-section-title {
+      font-size: .65rem; font-weight: 700; color: var(--text-muted-d);
+      text-transform: uppercase; letter-spacing: 1px;
+      padding: 0 8px 8px; margin-top: 8px;
+    }
+    .sidebar-link {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 10px; border-radius: 8px; text-decoration: none;
+      color: var(--text-muted-d); font-size: .875rem; font-weight: 500;
+      transition: all .15s; margin-bottom: 2px;
+    }
+    .sidebar-link i { width: 18px; text-align: center; }
+    .sidebar-link:hover { background: rgba(255,255,255,.06); color: #fff; }
+    .sidebar-link.active { background: rgba(227,30,36,.15); color: var(--bms-red); }
+    .sidebar-link.active i { color: var(--bms-red); }
+    .sidebar-footer {
+      padding: 16px; border-top: 1px solid var(--bms-border);
+    }
+    .user-pill {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .user-avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--bms-red); display: flex; align-items: center; justify-content: center;
+      font-family: 'Poppins', sans-serif; font-weight: 700; font-size: .85rem; color: #fff;
+    }
+    .user-name { font-size: .8rem; font-weight: 600; color: #e2e8f0; }
+    .user-role { font-size: .7rem; color: var(--text-muted-d); }
+
+    /* ── Main area ───────────────────────────────────── */
+    .main-wrap { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; }
+
+    /* ── Topbar ──────────────────────────────────────── */
+    .topbar {
+      height: var(--nav-h); background: var(--bms-mid);
+      border-bottom: 1px solid var(--bms-border);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 24px; position: sticky; top: 0; z-index: 90;
+    }
+    .topbar-title { font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 1rem; color: #fff; }
+    .topbar-right { display: flex; align-items: center; gap: 12px; }
+    .cache-badge {
+      font-size: .72rem; background: rgba(148,163,184,.1);
+      border: 1px solid var(--bms-border); color: var(--text-muted-d);
+      border-radius: 50px; padding: 4px 12px;
+    }
+    .btn-refresh {
+      background: rgba(227,30,36,.15); border: 1px solid rgba(227,30,36,.4);
+      color: var(--bms-red); border-radius: 8px;
+      padding: 6px 16px; font-size: .8rem; font-weight: 600;
+      cursor: pointer; transition: all .2s; text-decoration: none;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .btn-refresh:hover { background: rgba(227,30,36,.25); color: var(--bms-red); }
+    .back-link {
+      color: var(--text-muted-d); font-size: .8rem; text-decoration: none;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .back-link:hover { color: #fff; }
+
+    /* ── Page body ───────────────────────────────────── */
+    .page-body { padding: 24px; flex: 1; }
+
+    /* ── Stat cards ──────────────────────────────────── */
+    .stat-card {
+      background: var(--card-bg); border: 1px solid var(--bms-border);
+      border-radius: 12px; padding: 20px 24px;
+      display: flex; align-items: center; gap: 16px;
+    }
+    .stat-icon {
+      width: 48px; height: 48px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem; flex-shrink: 0;
+    }
+    .stat-label { font-size: .75rem; color: var(--text-muted-d); font-weight: 500; margin-bottom: 4px; }
+    .stat-value { font-family: 'Poppins', sans-serif; font-size: 1.5rem; font-weight: 700; color: #fff; line-height: 1; }
+    .stat-sub { font-size: .72rem; color: var(--text-muted-d); margin-top: 4px; }
+    .stat-sub.up { color: #4ade80; }
+    .stat-sub.dn { color: #f87171; }
+
+    /* ── Chart cards ─────────────────────────────────── */
+    .chart-card {
+      background: var(--card-bg); border: 1px solid var(--bms-border);
+      border-radius: 12px; padding: 20px 24px;
+    }
+    .chart-card-title {
+      font-family: 'Poppins', sans-serif; font-size: .9rem; font-weight: 700; color: #fff;
+      margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between;
+    }
+    .period-tabs { display: flex; gap: 4px; }
+    .period-tab {
+      background: none; border: 1px solid var(--bms-border);
+      color: var(--text-muted-d); border-radius: 6px;
+      padding: 4px 12px; font-size: .72rem; font-weight: 600;
+      cursor: pointer; transition: all .15s;
+    }
+    .period-tab.active, .period-tab:hover { background: var(--bms-red); border-color: var(--bms-red); color: #fff; }
+
+    /* ── Table ───────────────────────────────────────── */
+    .dash-table { width: 100%; border-collapse: collapse; }
+    .dash-table th {
+      font-size: .72rem; font-weight: 600; color: var(--text-muted-d);
+      text-transform: uppercase; letter-spacing: .5px;
+      padding: 0 12px 12px; text-align: left; border-bottom: 1px solid var(--bms-border);
+    }
+    .dash-table td {
+      padding: 12px; font-size: .85rem; color: #cbd5e1;
+      border-bottom: 1px solid rgba(51,65,85,.5);
+    }
+    .dash-table tr:last-child td { border-bottom: none; }
+    .dash-table tr:hover td { background: rgba(255,255,255,.02); }
+    .rank-badge {
+      width: 22px; height: 22px; border-radius: 6px;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: .72rem; font-weight: 700; font-family: 'Poppins', sans-serif;
+    }
+    .occ-bar { height: 6px; border-radius: 3px; background: rgba(255,255,255,.1); overflow: hidden; }
+    .occ-fill { height: 100%; border-radius: 3px; transition: width .4s; }
+
+    /* ── Activity feed ───────────────────────────────── */
+    .feed-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 0; border-bottom: 1px solid rgba(51,65,85,.5);
+    }
+    .feed-item:last-child { border-bottom: none; }
+    .feed-avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: linear-gradient(135deg, #334155, #475569);
+      display: flex; align-items: center; justify-content: center;
+      font-size: .78rem; font-weight: 700; color: #cbd5e1; flex-shrink: 0;
+    }
+    .feed-text { font-size: .82rem; color: #94a3b8; line-height: 1.4; }
+    .feed-text strong { color: #e2e8f0; }
+    .feed-time { font-size: .7rem; color: #64748b; white-space: nowrap; }
+
+    /* ── Security badge ──────────────────────────────── */
+    .security-row {
+      display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px;
+    }
+    .sec-chip {
+      background: rgba(74,222,128,.08); border: 1px solid rgba(74,222,128,.2);
+      color: #4ade80; border-radius: 6px; padding: 4px 12px; font-size: .72rem; font-weight: 600;
+      display: flex; align-items: center; gap: 5px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Sidebar ──────────────────────────────────────────────── -->
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <a href="/" class="logo"><i class="fas fa-film"></i>Book<span>My</span>Seat</a>
+    <div class="badge-admin mt-1">ADMIN PANEL</div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section-title">Analytics</div>
+    <a href="{% url 'analytics_dashboard' %}" class="sidebar-link active">
+      <i class="fas fa-chart-line"></i> Dashboard
+    </a>
+    <a href="{% url 'analytics_dashboard' %}?refresh=1" class="sidebar-link">
+      <i class="fas fa-sync-alt"></i> Refresh Data
+    </a>
+    <div class="nav-section-title mt-3">Management</div>
+    <a href="/admin/" class="sidebar-link">
+      <i class="fas fa-database"></i> Django Admin
+    </a>
+    <a href="{% url 'movie_list' %}" class="sidebar-link">
+      <i class="fas fa-film"></i> Movies
+    </a>
+    <a href="/" class="sidebar-link">
+      <i class="fas fa-home"></i> Main Site
+    </a>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="user-pill">
+      <div class="user-avatar">{{ request.user.username|first|upper }}</div>
+      <div>
+        <div class="user-name">{{ request.user.username }}</div>
+        <div class="user-role">{% if request.user.is_superuser %}Superuser{% else %}Staff{% endif %}</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- ── Main ─────────────────────────────────────────────────── -->
+<div class="main-wrap">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="topbar-title"><i class="fas fa-chart-pie me-2" style="color:var(--bms-red);"></i>Analytics Dashboard</div>
+    <div class="topbar-right">
+      <span class="cache-badge"><i class="fas fa-bolt me-1"></i>Cache TTL: {{ cache_ttl_secs }}s</span>
+      <a href="?refresh=1" class="btn-refresh"><i class="fas fa-sync-alt"></i>Refresh</a>
+    </div>
+  </div>
+
+  <div class="page-body">
+
+    <!-- ── Security status row ─────────────────────── -->
+    <div class="chart-card mb-4" style="padding: 14px 20px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <div style="font-size:.8rem;color:var(--text-muted-d);">
+          <i class="fas fa-shield-alt me-1" style="color:#4ade80;"></i>
+          Access verified — {{ request.user.username }} ({% if request.user.is_superuser %}superuser{% else %}staff{% endif %})
+        </div>
+        <div class="security-row">
+          <span class="sec-chip"><i class="fas fa-check"></i> Role-based auth</span>
+          <span class="sec-chip"><i class="fas fa-check"></i> DB aggregation only</span>
+          <span class="sec-chip"><i class="fas fa-check"></i> In-memory cache active</span>
+          <span class="sec-chip"><i class="fas fa-check"></i> Session HttpOnly</span>
+          <span class="sec-chip"><i class="fas fa-check"></i> CSRF protected</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Stat cards ──────────────────────────────── -->
+    <div class="row g-3 mb-4">
+      <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+          <div class="stat-icon" style="background:rgba(227,30,36,.15);">
+            <i class="fas fa-indian-rupee-sign" style="color:var(--bms-red);"></i>
+          </div>
+          <div>
+            <div class="stat-label">Total Revenue</div>
+            <div class="stat-value">₹{{ summary.total_revenue_inr|floatformat:0 }}</div>
+            <div class="stat-sub up"><i class="fas fa-arrow-up me-1"></i>Today ₹{{ summary.today_revenue_inr|floatformat:0 }}</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+          <div class="stat-icon" style="background:rgba(59,130,246,.15);">
+            <i class="fas fa-ticket-alt" style="color:#3b82f6;"></i>
+          </div>
+          <div>
+            <div class="stat-label">Total Bookings</div>
+            <div class="stat-value">{{ summary.total_bookings }}</div>
+            <div class="stat-sub up"><i class="fas fa-arrow-up me-1"></i>Today +{{ summary.today_bookings }}</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+          <div class="stat-icon" style="background:rgba(168,85,247,.15);">
+            <i class="fas fa-users" style="color:#a855f7;"></i>
+          </div>
+          <div>
+            <div class="stat-label">Active Users</div>
+            <div class="stat-value">{{ summary.total_users }}</div>
+            <div class="stat-sub">Avg ticket ₹{{ summary.avg_ticket_inr }}</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+          <div class="stat-icon" style="background:rgba(249,115,22,.15);">
+            <i class="fas fa-exclamation-triangle" style="color:#f97316;"></i>
+          </div>
+          <div>
+            <div class="stat-label">Failure Rate</div>
+            <div class="stat-value">{{ summary.failure_rate }}%</div>
+            <div class="stat-sub {% if summary.failure_rate < 5 %}up{% else %}dn{% endif %}">
+              {% if summary.failure_rate < 5 %}Healthy{% else %}Needs attention{% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Revenue chart ───────────────────────────── -->
+    <div class="chart-card mb-4">
+      <div class="chart-card-title">
+        <span><i class="fas fa-chart-line me-2" style="color:var(--bms-red);"></i>Revenue Over Time</span>
+        <div class="period-tabs">
+          <button class="period-tab active" onclick="switchRevenue('daily', this)">Daily</button>
+          <button class="period-tab" onclick="switchRevenue('weekly', this)">Weekly</button>
+          <button class="period-tab" onclick="switchRevenue('monthly', this)">Monthly</button>
+        </div>
+      </div>
+      <canvas id="revenueChart" height="80"></canvas>
+    </div>
+
+    <div class="row g-4 mb-4">
+      <!-- Popular movies -->
+      <div class="col-lg-7">
+        <div class="chart-card" style="height:100%;">
+          <div class="chart-card-title">
+            <span><i class="fas fa-fire me-2" style="color:var(--bms-red);"></i>Most Popular Movies</span>
+          </div>
+          {% if popular %}
+          <table class="dash-table">
+            <thead><tr><th>#</th><th>Movie</th><th>Bookings</th><th>Revenue</th></tr></thead>
+            <tbody>
+              {% for m in popular %}
+              <tr>
+                <td>
+                  <span class="rank-badge"
+                    style="background:{% if forloop.counter == 1 %}rgba(245,166,35,.2);color:#f5a623;{% elif forloop.counter == 2 %}rgba(203,213,225,.15);color:#cbd5e1;{% elif forloop.counter == 3 %}rgba(205,127,50,.2);color:#cd7f32;{% else %}rgba(100,116,139,.15);color:#64748b;{% endif %}">
+                    {{ forloop.counter }}
+                  </span>
+                </td>
+                <td style="color:#e2e8f0;font-weight:500;">{{ m.name }}</td>
+                <td>
+                  <div style="font-weight:600;color:#fff;">{{ m.bookings }}</div>
+                  <div style="font-size:.7rem;color:var(--text-muted-d);">bookings</div>
+                </td>
+                <td style="color:#4ade80;font-weight:600;">₹{{ m.revenue_inr|floatformat:0 }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          {% else %}
+          <div style="text-align:center;padding:40px;color:var(--text-muted-d);">
+            <i class="fas fa-film fa-2x mb-3 d-block"></i>No booking data yet
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Payment donut + peak hours mini -->
+      <div class="col-lg-5">
+        <div class="chart-card mb-4">
+          <div class="chart-card-title"><span><i class="fas fa-circle-half-stroke me-2" style="color:#3b82f6;"></i>Payment Status</span></div>
+          <canvas id="donutChart" height="160"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+      <!-- Theater occupancy -->
+      <div class="col-lg-6">
+        <div class="chart-card">
+          <div class="chart-card-title">
+            <span><i class="fas fa-building me-2" style="color:#a855f7;"></i>Theater Occupancy</span>
+          </div>
+          {% if occupancy %}
+          <table class="dash-table">
+            <thead><tr><th>Theater</th><th>Movie</th><th>Occupancy</th><th>%</th></tr></thead>
+            <tbody>
+              {% for t in occupancy %}
+              <tr>
+                <td style="font-weight:500;color:#e2e8f0;">{{ t.theater_name }}</td>
+                <td style="color:var(--text-muted-d);font-size:.78rem;">{{ t.movie_name|truncatechars:20 }}</td>
+                <td style="width:120px;">
+                  <div class="occ-bar">
+                    <div class="occ-fill" style="width:{{ t.occupancy_pct }}%;background:{% if t.occupancy_pct > 80 %}#ef4444{% elif t.occupancy_pct > 50 %}#f97316{% else %}#3b82f6{% endif %};"></div>
+                  </div>
+                </td>
+                <td style="font-weight:700;color:{% if t.occupancy_pct > 80 %}#ef4444{% elif t.occupancy_pct > 50 %}#f97316{% else %}#3b82f6{% endif %};">{{ t.occupancy_pct }}%</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          {% else %}
+          <div style="text-align:center;padding:40px;color:var(--text-muted-d);">No theater data</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Peak hours -->
+      <div class="col-lg-6">
+        <div class="chart-card">
+          <div class="chart-card-title">
+            <span><i class="fas fa-clock me-2" style="color:#f97316;"></i>Peak Booking Hours</span>
+          </div>
+          <canvas id="hoursChart" height="180"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent activity -->
+    <div class="chart-card mb-4">
+      <div class="chart-card-title">
+        <span><i class="fas fa-list-ul me-2" style="color:#4ade80;"></i>Recent Bookings</span>
+        <span style="font-size:.72rem;color:var(--text-muted-d);">Live — no cache</span>
+      </div>
+      {% if recent %}
+        {% for b in recent %}
+        <div class="feed-item">
+          <div class="feed-avatar">{{ b.user.username|first|upper }}</div>
+          <div style="flex:1;">
+            <div class="feed-text">
+              <strong>{{ b.user.username }}</strong> booked
+              <strong>{{ b.movie.name }}</strong> — Seat <strong>{{ b.seat.seat_number }}</strong>
+              at {{ b.theater.name }}
+            </div>
+          </div>
+          <div class="feed-time">{{ b.booked_at|date:"d M H:i" }}</div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div style="text-align:center;padding:32px;color:var(--text-muted-d);">No bookings yet</div>
+      {% endif %}
+    </div>
+
+    <!-- Index documentation card -->
+    <div class="chart-card">
+      <div class="chart-card-title"><span><i class="fas fa-database me-2" style="color:#f5a623;"></i>Query Optimisation Notes</span></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-top:4px;">
+        {% for idx, desc in index_docs %}
+        <div style="background:rgba(255,255,255,.03);border:1px solid var(--bms-border);border-radius:8px;padding:14px;">
+          <code style="color:#f5a623;font-size:.78rem;">{{ idx }}</code>
+          <p style="color:var(--text-muted-d);font-size:.76rem;margin:6px 0 0;line-height:1.5;">{{ desc }}</p>
+        </div>
+        {% empty %}
+        <div style="background:rgba(255,255,255,.03);border:1px solid var(--bms-border);border-radius:8px;padding:14px;">
+          <code style="color:#f5a623;font-size:.78rem;">booking_booked_at_idx</code>
+          <p style="color:var(--text-muted-d);font-size:.76rem;margin:6px 0 0;line-height:1.5;">WHERE booked_at &gt;= date — all time-range filters</p>
+        </div>
+        <div style="background:rgba(255,255,255,.03);border:1px solid var(--bms-border);border-radius:8px;padding:14px;">
+          <code style="color:#f5a623;font-size:.78rem;">booking_movie_time_idx</code>
+          <p style="color:var(--text-muted-d);font-size:.76rem;margin:6px 0 0;line-height:1.5;">GROUP BY movie_id ORDER BY booked_at — popular movies chart</p>
+        </div>
+        <div style="background:rgba(255,255,255,.03);border:1px solid var(--bms-border);border-radius:8px;padding:14px;">
+          <code style="color:#f5a623;font-size:.78rem;">seat_theater_booked_idx</code>
+          <p style="color:var(--text-muted-d);font-size:.76rem;margin:6px 0 0;line-height:1.5;">WHERE theater_id=X AND is_booked=1 — occupancy rate (no full scan)</p>
+        </div>
+        <div style="background:rgba(255,255,255,.03);border:1px solid var(--bms-border);border-radius:8px;padding:14px;">
+          <code style="color:#f5a623;font-size:.78rem;">payment_status_time_idx</code>
+          <p style="color:var(--text-muted-d);font-size:.76rem;margin:6px 0 0;line-height:1.5;">WHERE status='paid' AND created_at&gt;=date — revenue queries</p>
+        </div>
+        <div style="background:rgba(255,255,255,.03);border:1px solid var(--bms-border);border-radius:8px;padding:14px;">
+          <code style="color:#f5a623;font-size:.78rem;">LocMemCache (5 min TTL)</code>
+          <p style="color:var(--text-muted-d);font-size:.76rem;margin:6px 0 0;line-height:1.5;">All aggregation results cached per-process. Swap to Redis for multi-worker production.</p>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+  </div><!-- /page-body -->
+</div><!-- /main-wrap -->
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  // ── Data from Django ──────────────────────────────────────────
+  const REVENUE = {
+    daily:   {{ revenue_daily_json|safe }},
+    weekly:  {{ revenue_weekly_json|safe }},
+    monthly: {{ revenue_monthly_json|safe }},
+  };
+  const PEAK    = {{ peak_hours_json|safe }};
+  const POPULAR = {{ popular_json|safe }};
+  const PAYSTATUS = {{ pay_breakdown_json|safe }};
+
+  // ── Chart defaults ────────────────────────────────────────────
+  Chart.defaults.color = '#94a3b8';
+  Chart.defaults.font.family = "'Inter', sans-serif";
+
+  const gridColor  = 'rgba(51,65,85,0.6)';
+  const RED        = '#e31e24';
+  const BLUE       = '#3b82f6';
+  const PURPLE     = '#a855f7';
+  const ORANGE     = '#f97316';
+  const GREEN      = '#4ade80';
+
+  // ── Revenue chart ─────────────────────────────────────────────
+  const revCtx = document.getElementById('revenueChart').getContext('2d');
+  const revChart = new Chart(revCtx, {
+    type: 'line',
+    data: {
+      labels: REVENUE.daily.labels,
+      datasets: [{
+        label: 'Revenue (₹)',
+        data: REVENUE.daily.revenues,
+        borderColor: RED,
+        backgroundColor: 'rgba(227,30,36,.08)',
+        borderWidth: 2.5,
+        fill: true,
+        tension: 0.4,
+        pointBackgroundColor: RED,
+        pointRadius: 4,
+        pointHoverRadius: 7,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false }, tooltip: {
+        callbacks: { label: ctx => ` ₹${ctx.parsed.y.toLocaleString()}` }
+      }},
+      scales: {
+        x: { grid: { color: gridColor }, ticks: { maxTicksLimit: 10 } },
+        y: { grid: { color: gridColor }, ticks: { callback: v => '₹' + v.toLocaleString() } }
+      }
+    }
+  });
+
+  function switchRevenue(period, btn) {
+    document.querySelectorAll('.period-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    const d = REVENUE[period];
+    revChart.data.labels   = d.labels;
+    revChart.data.datasets[0].data = d.revenues;
+    revChart.update();
+  }
+
+  // ── Payment status donut ──────────────────────────────────────
+  const donutCtx = document.getElementById('donutChart').getContext('2d');
+  const statusColors = { paid: GREEN, failed: '#ef4444', created: BLUE, cancelled: ORANGE };
+  new Chart(donutCtx, {
+    type: 'doughnut',
+    data: {
+      labels: Object.keys(PAYSTATUS).map(k => k.charAt(0).toUpperCase() + k.slice(1)),
+      datasets: [{
+        data: Object.values(PAYSTATUS),
+        backgroundColor: Object.keys(PAYSTATUS).map(k => statusColors[k] || '#64748b'),
+        borderColor: '#1e293b',
+        borderWidth: 3,
+        hoverBorderWidth: 4,
+      }]
+    },
+    options: {
+      cutout: '68%',
+      plugins: {
+        legend: { position: 'bottom', labels: { padding: 16, boxWidth: 12 } }
+      }
+    }
+  });
+
+  // ── Peak hours bar ────────────────────────────────────────────
+  const hourCtx = document.getElementById('hoursChart').getContext('2d');
+  const maxHour = Math.max(...PEAK.counts, 1);
+  new Chart(hourCtx, {
+    type: 'bar',
+    data: {
+      labels: PEAK.labels,
+      datasets: [{
+        label: 'Bookings',
+        data: PEAK.counts,
+        backgroundColor: PEAK.counts.map(v =>
+          v === maxHour ? RED : 'rgba(59,130,246,0.5)'
+        ),
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false }, ticks: { maxTicksLimit: 8 } },
+        y: { grid: { color: gridColor }, ticks: { stepSize: 1 } }
+      }
+    }
+  });
+</script>
+</body>
+</html>

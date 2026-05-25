@@ -1,0 +1,41 @@
+{% extends "users/basic.html" %}
+{% block content %}
+<div class="container mt-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-6 text-center">
+      <div class="card shadow-sm border-0 p-5">
+        <div class="mb-4">
+          <i class="fas fa-times-circle fa-5x text-danger"></i>
+        </div>
+        <h2 class="fw-bold mb-2">Payment Failed</h2>
+        <p class="text-muted mb-4">
+          We could not complete your payment. Your seats have been released.
+        </p>
+        {% if payment and payment.failure_reason %}
+        <div class="alert alert-warning text-start mb-4" style="font-size:13px;">
+          <i class="fas fa-exclamation-triangle me-1"></i>
+          {{ payment.failure_reason }}
+        </div>
+        {% endif %}
+        <div class="bg-light rounded p-3 mb-4 text-start" style="font-size:13px;">
+          <p class="mb-1 fw-semibold">Common reasons for payment failure:</p>
+          <ul class="mb-0 text-muted ps-3">
+            <li>Insufficient balance</li>
+            <li>Card declined by bank</li>
+            <li>Session timed out before payment</li>
+            <li>Network interruption during checkout</li>
+          </ul>
+        </div>
+        <div class="d-grid gap-2">
+          <a href="{% url 'movie_list' %}" class="btn btn-primary btn-lg">
+            <i class="fas fa-redo me-2"></i>Try Again
+          </a>
+          <a href="{% url 'profile' %}" class="btn btn-outline-secondary">
+            My Bookings
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

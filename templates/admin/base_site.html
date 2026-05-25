@@ -1,0 +1,135 @@
+{% extends "admin/base.html" %}
+{% load i18n %}
+
+{% block title %}{{ title }} | BookMySeat Admin{% endblock %}
+
+{% block branding %}
+<h1 id="site-name">
+  <a href="{% url 'admin:index' %}">
+    🎬 BookMySeat <span style="font-size:.65rem;font-weight:400;opacity:.7;">ADMIN</span>
+  </a>
+</h1>
+{% endblock %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+  /* ── Brand colours ────────────────────────── */
+  :root {
+    --bms-red:  #e31e24;
+    --bms-dark: #0f172a;
+    --bms-mid:  #1e293b;
+  }
+
+  /* Header */
+  #header {
+    background: var(--bms-dark) !important;
+    color: #fff;
+    padding: 12px 20px;
+    border-bottom: 3px solid var(--bms-red);
+  }
+  #header a, #header a:visited { color: #fff; text-decoration: none; }
+  #header #site-name a { font-size: 1.3rem; font-weight: 800; letter-spacing: -0.5px; }
+  #user-tools { font-size: .82rem; color: rgba(255,255,255,.7); }
+  #user-tools a { color: rgba(255,255,255,.9); }
+  #user-tools a:hover { color: var(--bms-red); }
+
+  /* Breadcrumb bar */
+  div.breadcrumbs {
+    background: var(--bms-mid) !important;
+    padding: 8px 20px;
+    font-size: .82rem;
+    color: rgba(255,255,255,.6);
+    border-bottom: 1px solid #334155;
+  }
+  div.breadcrumbs a { color: #94a3b8; }
+  div.breadcrumbs a:hover { color: #fff; }
+
+  /* Sidebar modules */
+  #nav-sidebar .module caption,
+  .module caption, h2 {
+    background: var(--bms-red) !important;
+    color: #fff !important;
+    font-size: .85rem;
+    letter-spacing: .5px;
+    padding: 10px 14px !important;
+  }
+
+  /* Submit row buttons */
+  .submit-row input[type=submit],
+  .submit-row .button,
+  input[type=submit].default {
+    background: var(--bms-red) !important;
+    border-radius: 6px !important;
+    border: none !important;
+    padding: 8px 20px !important;
+    font-weight: 600 !important;
+    font-size: .85rem !important;
+  }
+  .submit-row a.deletelink {
+    background: #64748b !important;
+    border-radius: 6px;
+  }
+
+  /* Links */
+  a { color: var(--bms-red); }
+  a:hover { color: #c41920; }
+  .addlink, .changelink { color: var(--bms-red) !important; }
+
+  /* Calendar widget */
+  .calendar td a:hover,
+  .timelist a:hover { background: var(--bms-red) !important; }
+
+  /* Object tools */
+  .object-tools a:hover,
+  .object-tools li a { background: var(--bms-red) !important; }
+
+  /* Dashboard shortcut banner */
+  .bms-dash-banner {
+    background: linear-gradient(135deg, #1e293b, #0f172a);
+    border: 1px solid #334155;
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .bms-dash-banner .info { color: rgba(255,255,255,.7); font-size: .85rem; }
+  .bms-dash-banner .info strong { color: #fff; font-size: 1rem; display: block; margin-bottom: 2px; }
+  .bms-dash-banner .btn {
+    background: var(--bms-red);
+    color: #fff !important;
+    border-radius: 8px;
+    padding: 9px 20px;
+    font-weight: 700;
+    font-size: .85rem;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .bms-dash-banner .btn:hover { background: #c41920; }
+
+  /* Responsive tweak */
+  @media(max-width:767px) {
+    #header { padding: 10px 14px; }
+  }
+</style>
+{% endblock %}
+
+{% block content_title %}
+  {% if not is_popup %}
+  <div class="bms-dash-banner">
+    <div class="info">
+      <strong>📊 Analytics Dashboard</strong>
+      View real-time revenue, popular movies, theater occupancy and peak hours.
+    </div>
+    <a href="/movies/admin/analytics/" class="btn">
+      Open Analytics &rarr;
+    </a>
+  </div>
+  {% endif %}
+  {% block object_tools %}{% endblock %}
+  {% if title %}<h1>{{ title }}</h1>{% endif %}
+{% endblock %}

@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Booking Confirmed — {{ site_name }}</title>
+<style>
+  body { margin:0; padding:0; background:#f4f4f4; font-family:'Segoe UI',Arial,sans-serif; }
+  .wrapper { max-width:600px; margin:32px auto; background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 4px 24px rgba(0,0,0,.1); }
+  .header { background:linear-gradient(135deg,#1a1a2e,#16213e); padding:32px 40px; text-align:center; }
+  .header .logo { color:#fff; font-size:1.6rem; font-weight:800; letter-spacing:-0.5px; }
+  .header .logo span { color:#e31e24; }
+  .hero { background:#e31e24; padding:28px 40px; text-align:center; }
+  .hero .icon { font-size:3rem; }
+  .hero h1 { color:#fff; font-size:1.4rem; font-weight:700; margin:8px 0 4px; }
+  .hero p { color:rgba(255,255,255,.85); font-size:.9rem; margin:0; }
+  .body { padding:32px 40px; }
+  .greeting { font-size:1rem; color:#333; margin-bottom:20px; }
+  .ticket-box { background:#f8f8f8; border-radius:10px; border:1.5px solid #e8e8e8; overflow:hidden; margin-bottom:24px; }
+  .ticket-head { background:#1a1a2e; padding:14px 20px; }
+  .ticket-head h2 { color:#fff; font-size:1.1rem; margin:0; font-weight:700; }
+  .ticket-body { padding:0; }
+  .ticket-row { display:flex; justify-content:space-between; align-items:center; padding:12px 20px; border-bottom:1px solid #eee; }
+  .ticket-row:last-child { border-bottom:none; }
+  .ticket-row .lbl { color:#888; font-size:.82rem; font-weight:500; }
+  .ticket-row .val { color:#1a1a2e; font-size:.9rem; font-weight:600; text-align:right; }
+  .seat-chips { display:inline-flex; flex-wrap:wrap; gap:6px; justify-content:flex-end; }
+  .seat-chip { background:#e8f5e9; color:#2e7d32; border-radius:4px; padding:2px 10px; font-size:.8rem; font-weight:700; }
+  .amount-highlight { color:#e31e24 !important; font-size:1.1rem !important; }
+  .ref-box { background:#fffbf0; border:1.5px dashed #ffc107; border-radius:8px; padding:14px 20px; margin-bottom:24px; text-align:center; }
+  .ref-box .lbl { font-size:.78rem; color:#888; margin-bottom:4px; }
+  .ref-box .ref { font-family:monospace; font-size:.92rem; color:#333; letter-spacing:1px; word-break:break-all; }
+  .payment-id { font-family:monospace; font-size:.82rem; color:#666; }
+  .note-box { background:#f0f7ff; border-radius:8px; padding:14px 20px; margin-bottom:24px; font-size:.82rem; color:#555; line-height:1.6; }
+  .note-box strong { color:#1a1a2e; }
+  .footer { background:#f8f8f8; border-top:1px solid #eee; padding:24px 40px; text-align:center; }
+  .footer p { color:#999; font-size:.78rem; margin:4px 0; }
+  .footer a { color:#e31e24; text-decoration:none; }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="logo">🎬 Book<span>My</span>Seat</div>
+  </div>
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="icon">✅</div>
+    <h1>Booking Confirmed!</h1>
+    <p>Your tickets are reserved. Enjoy the movie!</p>
+  </div>
+
+  <!-- Body -->
+  <div class="body">
+    <p class="greeting">Hi <strong>{{ user.username }}</strong>,</p>
+    <p style="color:#555;font-size:.9rem;line-height:1.6;margin-bottom:24px;">
+      Great news! Your booking has been confirmed. Here are your ticket details:
+    </p>
+
+    <!-- Ticket card -->
+    <div class="ticket-box">
+      <div class="ticket-head">
+        <h2>🎟 {{ movie_name }}</h2>
+      </div>
+      <div class="ticket-body">
+        <div class="ticket-row">
+          <span class="lbl">Theater</span>
+          <span class="val">{{ theater_name }}</span>
+        </div>
+        <div class="ticket-row">
+          <span class="lbl">Show Time</span>
+          <span class="val">{{ show_time }}</span>
+        </div>
+        <div class="ticket-row">
+          <span class="lbl">Seats</span>
+          <span class="val">
+            <div class="seat-chips">
+              {% for seat in seats %}
+              <span class="seat-chip">{{ seat }}</span>
+              {% endfor %}
+            </div>
+          </span>
+        </div>
+        <div class="ticket-row">
+          <span class="lbl">Amount Paid</span>
+          <span class="val amount-highlight">₹{{ amount_inr }}</span>
+        </div>
+        <div class="ticket-row">
+          <span class="lbl">Payment ID</span>
+          <span class="val payment-id">{{ payment_id }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Booking reference -->
+    <div class="ref-box">
+      <div class="lbl">📋 BOOKING REFERENCE</div>
+      <div class="ref">{{ booking_ref }}</div>
+    </div>
+
+    <!-- Note -->
+    <div class="note-box">
+      <strong>📌 Important:</strong> Please carry a valid photo ID to the theater.
+      This confirmation email serves as your digital ticket.
+      Tickets are <strong>non-cancellable</strong> after booking.
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <p>If you have any issues, contact us at <a href="mailto:support@bookmyseat.in">support@bookmyseat.in</a></p>
+    <p>© 2026 {{ site_name }}. All rights reserved.</p>
+    <p style="font-size:.7rem;color:#bbb;margin-top:8px;">
+      This is an automated email. Please do not reply.
+    </p>
+  </div>
+
+</div>
+</body>
+</html>

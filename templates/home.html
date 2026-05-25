@@ -1,0 +1,336 @@
+{% extends "users/basic.html" %}
+{% block title %}BookMySeat — Book Movie Tickets Online{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* ── Hero ─────────────────────────────────────────────────── */
+  .hero {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%);
+    padding: 64px 0 80px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  }
+  .hero-title {
+    font-family: 'Poppins', sans-serif;
+    font-size: clamp(1.8rem, 4vw, 2.8rem);
+    font-weight: 700;
+    color: #fff;
+    line-height: 1.2;
+  }
+  .hero-title span { color: var(--bms-red); }
+  .hero-sub { color: rgba(255,255,255,.7); font-size: 1.05rem; margin: 16px 0 28px; }
+  .hero-search {
+    max-width: 580px;
+    position: relative;
+  }
+  .hero-search input {
+    border: none;
+    border-radius: 50px;
+    padding: 14px 60px 14px 22px;
+    font-size: 1rem;
+    width: 100%;
+    box-shadow: 0 8px 32px rgba(0,0,0,.3);
+    outline: none;
+    font-family: 'Inter', sans-serif;
+  }
+  .hero-search button {
+    position: absolute; right: 6px; top: 6px;
+    background: var(--bms-red);
+    border: none;
+    border-radius: 50px;
+    padding: 8px 22px;
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .2s;
+  }
+  .hero-search button:hover { background: #c41920; }
+  .hero-stats {
+    display: flex; gap: 32px; margin-top: 36px; flex-wrap: wrap;
+  }
+  .hero-stat { text-align: center; }
+  .hero-stat .num {
+    font-family: 'Poppins', sans-serif;
+    font-size: 1.6rem; font-weight: 700; color: #fff;
+    display: block;
+  }
+  .hero-stat .lbl { color: rgba(255,255,255,.5); font-size: .8rem; }
+
+  /* ── Section ──────────────────────────────────────────────── */
+  .home-section { padding: 48px 0; }
+  .home-section + .home-section { border-top: 1px solid #eee; }
+  .sec-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 24px;
+  }
+  .sec-title {
+    font-family: 'Poppins', sans-serif;
+    font-size: 1.2rem; font-weight: 700; color: #1a1a2e;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .sec-title::before {
+    content: '';
+    display: inline-block; width: 4px; height: 22px;
+    background: var(--bms-red); border-radius: 2px;
+  }
+  .see-all {
+    color: var(--bms-red); font-size: .85rem; font-weight: 600;
+    text-decoration: none;
+  }
+  .see-all:hover { text-decoration: underline; color: var(--bms-red); }
+
+  /* ── Movie card ───────────────────────────────────────────── */
+  .movie-card {
+    border-radius: 12px; overflow: hidden;
+    background: #fff;
+    box-shadow: 0 2px 12px rgba(0,0,0,.08);
+    transition: transform .25s, box-shadow .25s;
+    display: flex; flex-direction: column;
+    height: 100%;
+    text-decoration: none; color: inherit;
+  }
+  .movie-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 12px 32px rgba(0,0,0,.16);
+    color: inherit;
+  }
+  .movie-card-img {
+    position: relative; overflow: hidden;
+    aspect-ratio: 2/3;
+  }
+  .movie-card-img img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    transition: transform .4s;
+  }
+  .movie-card:hover .movie-card-img img { transform: scale(1.05); }
+  .movie-card-img .overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(to top, rgba(0,0,0,.75) 0%, transparent 50%);
+    opacity: 0; transition: opacity .3s;
+    display: flex; align-items: flex-end; padding: 16px;
+  }
+  .movie-card:hover .overlay { opacity: 1; }
+  .overlay .book-btn {
+    background: var(--bms-red); color: #fff;
+    border: none; border-radius: 6px;
+    padding: 8px 20px; font-weight: 600; font-size: .85rem;
+    width: 100%; cursor: pointer;
+  }
+  .movie-card-body { padding: 14px 16px; flex: 1; }
+  .movie-card-body .title {
+    font-family: 'Poppins', sans-serif;
+    font-size: .95rem; font-weight: 600;
+    margin-bottom: 4px; color: #1a1a2e;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .movie-card-body .rating {
+    font-size: .82rem; color: #888;
+  }
+  .rating-badge {
+    background: #1a1a2e; color: var(--bms-gold);
+    border-radius: 4px; padding: 2px 8px;
+    font-size: .78rem; font-weight: 600; margin-right: 6px;
+  }
+
+  /* ── Event card ───────────────────────────────────────────── */
+  .event-card {
+    border-radius: 10px; overflow: hidden;
+    background: #fff;
+    box-shadow: 0 2px 10px rgba(0,0,0,.07);
+    transition: transform .25s, box-shadow .25s;
+    cursor: pointer;
+  }
+  .event-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0,0,0,.12);
+  }
+  .event-card img {
+    width: 100%; aspect-ratio: 1/1; object-fit: cover;
+  }
+  .event-card .event-body { padding: 10px 12px; }
+  .event-card .event-title {
+    font-family: 'Poppins', sans-serif;
+    font-size: .88rem; font-weight: 600; color: #1a1a2e;
+    margin-bottom: 2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .event-card .event-sub { font-size: .76rem; color: #999; }
+
+  /* ── Promo banner ─────────────────────────────────────────── */
+  .promo-banner {
+    border-radius: 14px; overflow: hidden;
+    background: linear-gradient(135deg, #1a1a2e, #0f3460);
+    padding: 40px 48px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 24px;
+  }
+  .promo-banner h3 {
+    color: #fff; font-family: 'Poppins', sans-serif;
+    font-size: 1.4rem; font-weight: 700; margin-bottom: 8px;
+  }
+  .promo-banner p { color: rgba(255,255,255,.7); margin: 0; font-size: .9rem; }
+  .promo-banner .btn-promo {
+    background: var(--bms-red); color: #fff;
+    border: none; border-radius: 8px;
+    padding: 12px 28px; font-weight: 700; font-size: .95rem;
+    white-space: nowrap; text-decoration: none;
+    transition: background .2s, transform .15s;
+    display: inline-block;
+  }
+  .promo-banner .btn-promo:hover { background: #c41920; transform: scale(1.03); color: #fff; }
+
+  /* ── Category pills ───────────────────────────────────────── */
+  .cat-pill {
+    display: inline-flex; flex-direction: column; align-items: center;
+    gap: 8px; padding: 16px 20px;
+    background: #fff; border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,.06);
+    cursor: pointer; transition: all .2s;
+    min-width: 80px; text-decoration: none; color: #444;
+  }
+  .cat-pill:hover { background: var(--bms-red); color: #fff; transform: translateY(-3px); }
+  .cat-pill i { font-size: 1.4rem; }
+  .cat-pill span { font-size: .75rem; font-weight: 600; font-family: 'Poppins', sans-serif; }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- ── Hero ──────────────────────────────────────────────────────── -->
+<section class="hero">
+  <div class="container position-relative">
+    <div class="row align-items-center">
+      <div class="col-lg-7">
+        <div class="hero-title">
+          Book Your Perfect<br><span>Movie Experience</span>
+        </div>
+        <p class="hero-sub">Tickets for movies, events, plays &amp; sports — all in one place.</p>
+
+        <form class="hero-search" method="GET" action="/movies">
+          <input type="text" name="search" placeholder="Search movies, events, artists…" />
+          <button type="submit"><i class="fas fa-search me-1"></i>Search</button>
+        </form>
+
+        <div class="hero-stats">
+          <div class="hero-stat"><span class="num">500+</span><span class="lbl">Movies</span></div>
+          <div class="hero-stat"><span class="num">50+</span><span class="lbl">Theaters</span></div>
+          <div class="hero-stat"><span class="num">1M+</span><span class="lbl">Happy Users</span></div>
+        </div>
+      </div>
+      <div class="col-lg-5 d-none d-lg-flex justify-content-end">
+        <div style="font-size:10rem;opacity:.15;line-height:1;">🎬</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="container">
+
+  {% if not user.is_authenticated %}
+  <div class="alert d-flex align-items-center gap-3 mt-4 border-0 shadow-sm" style="background:#fff3cd;border-radius:10px;" role="alert">
+    <i class="fas fa-info-circle fa-lg text-warning"></i>
+    <span>
+      <a href="{% url 'login' %}" class="fw-bold" style="color:var(--bms-red)">Login</a> or
+      <a href="{% url 'register' %}" class="fw-bold" style="color:var(--bms-red)">Register</a>
+      to book tickets instantly.
+    </span>
+  </div>
+  {% endif %}
+
+  <!-- ── Category pills ─────────────────────────────────────────── -->
+  <section class="home-section" style="border-top:none;padding-top:32px;">
+    <div class="d-flex flex-wrap gap-3">
+      <a href="/movies" class="cat-pill"><i class="fas fa-film"></i><span>Movies</span></a>
+      <a href="#"       class="cat-pill"><i class="fas fa-music"></i><span>Music</span></a>
+      <a href="#"       class="cat-pill"><i class="fas fa-futbol"></i><span>Sports</span></a>
+      <a href="#"       class="cat-pill"><i class="fas fa-theater-masks"></i><span>Plays</span></a>
+      <a href="#"       class="cat-pill"><i class="fas fa-microphone"></i><span>Comedy</span></a>
+      <a href="#"       class="cat-pill"><i class="fas fa-palette"></i><span>Art</span></a>
+    </div>
+  </section>
+
+  <!-- ── Now Showing ────────────────────────────────────────────── -->
+  <section class="home-section">
+    <div class="sec-header">
+      <div class="sec-title">Now Showing</div>
+      <a href="/movies" class="see-all">See All <i class="fas fa-chevron-right ms-1" style="font-size:.75rem;"></i></a>
+    </div>
+    {% if movies %}
+    <div class="row g-3">
+      {% for movie in movies|slice:":4" %}
+      <div class="col-6 col-md-3">
+        <a href="{% url 'theater_list' movie.id %}" class="movie-card">
+          <div class="movie-card-img">
+            <img src="{{ movie.image.url }}" alt="{{ movie.name }}">
+            <div class="overlay">
+              <button class="book-btn"><i class="fas fa-ticket-alt me-1"></i>Book Now</button>
+            </div>
+          </div>
+          <div class="movie-card-body">
+            <div class="title" title="{{ movie.name }}">{{ movie.name }}</div>
+            <div class="rating">
+              <span class="rating-badge">★ {{ movie.rating }}</span>
+              <span>{{ movie.cast|truncatechars:28 }}</span>
+            </div>
+          </div>
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-5 text-muted">
+      <i class="fas fa-film fa-3x mb-3 d-block"></i>
+      No movies available yet. Check back soon!
+    </div>
+    {% endif %}
+  </section>
+
+  <!-- ── Promo banner ───────────────────────────────────────────── -->
+  <section class="home-section" style="border-top:none;">
+    <div class="promo-banner">
+      <div>
+        <h3>🎉 Get Exclusive Deals</h3>
+        <p>Sign up today and get ₹50 off on your first booking with code <strong>FIRSTSHOW</strong></p>
+      </div>
+      <a href="{% url 'register' %}" class="btn-promo">Claim Offer</a>
+    </div>
+  </section>
+
+  <!-- ── Live Events ────────────────────────────────────────────── -->
+  <section class="home-section">
+    <div class="sec-header">
+      <div class="sec-title">Live Events</div>
+      <a href="#" class="see-all">See All <i class="fas fa-chevron-right ms-1" style="font-size:.75rem;"></i></a>
+    </div>
+    <div class="row g-3">
+      {% for src, name, sub in event_items %}
+      <div class="col-6 col-md-2">
+        <div class="event-card">
+          <img src="{{ src }}" alt="{{ name }}">
+          <div class="event-body">
+            <div class="event-title">{{ name }}</div>
+            <div class="event-sub">{{ sub }}</div>
+          </div>
+        </div>
+      </div>
+      {% empty %}
+      {% with events="Comedy Night|Stand Up|Rock Fest|Live Music|Dance Show|Theatre" %}
+      {% for ev in events|cut:" "|make_list %}{% endfor %}
+      <div class="col-6 col-md-2"><div class="event-card"><img src="https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=400&fit=crop" alt="Event"><div class="event-body"><div class="event-title">Comedy Night</div><div class="event-sub">Stand Up</div></div></div></div>
+      <div class="col-6 col-md-2"><div class="event-card"><img src="https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=400&fit=crop" alt="Event"><div class="event-body"><div class="event-title">Rock Fest</div><div class="event-sub">Live Music</div></div></div></div>
+      <div class="col-6 col-md-2"><div class="event-card"><img src="https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=400&h=400&fit=crop" alt="Event"><div class="event-body"><div class="event-title">Dance Show</div><div class="event-sub">Bollywood Night</div></div></div></div>
+      <div class="col-6 col-md-2"><div class="event-card"><img src="https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=400&h=400&fit=crop" alt="Event"><div class="event-body"><div class="event-title">Theatre</div><div class="event-sub">Drama</div></div></div></div>
+      <div class="col-6 col-md-2"><div class="event-card"><img src="https://images.unsplash.com/photo-1571266028243-e4733b0f0bb0?w=400&h=400&fit=crop" alt="Event"><div class="event-body"><div class="event-title">Jazz Evening</div><div class="event-sub">Music</div></div></div></div>
+      <div class="col-6 col-md-2"><div class="event-card"><img src="https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=400&h=400&fit=crop" alt="Event"><div class="event-body"><div class="event-title">Sports Live</div><div class="event-sub">IPL Special</div></div></div></div>
+      {% endwith %}
+      {% endfor %}
+    </div>
+  </section>
+
+</div>
+{% endblock %}

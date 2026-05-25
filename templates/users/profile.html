@@ -1,0 +1,230 @@
+{% extends "users/basic.html" %}
+{% block title %}My Profile — BookMySeat{% endblock %}
+{% block extra_head %}
+<style>
+  .profile-hero {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    padding: 40px 0 80px;
+  }
+  .avatar-ring {
+    width: 90px; height: 90px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--bms-red), #ff6b6b);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Poppins', sans-serif;
+    font-size: 2rem; font-weight: 700; color: #fff;
+    box-shadow: 0 4px 20px rgba(227,30,36,.4);
+    flex-shrink: 0;
+  }
+  .profile-name { color: #fff; font-size: 1.4rem; font-weight: 700; margin-bottom: 4px; }
+  .profile-email { color: rgba(255,255,255,.6); font-size: .88rem; }
+  .profile-badge {
+    background: rgba(255,255,255,.12); color: rgba(255,255,255,.8);
+    border-radius: 50px; padding: 4px 14px; font-size: .78rem; font-weight: 500;
+    display: inline-block; margin-top: 8px;
+  }
+  .profile-body { margin-top: -48px; }
+  .section-card {
+    background: #fff; border-radius: 14px;
+    box-shadow: 0 4px 24px rgba(0,0,0,.08);
+    overflow: hidden; margin-bottom: 24px;
+  }
+  .section-card .card-head {
+    padding: 18px 24px; border-bottom: 1px solid #f0f0f0;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .section-card .card-head .icon {
+    width: 36px; height: 36px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem;
+  }
+  .section-card .card-head h5 {
+    margin: 0; font-family: 'Poppins', sans-serif;
+    font-size: 1rem; font-weight: 700; color: #1a1a2e;
+  }
+  .section-card .card-body-inner { padding: 24px; }
+  .form-field-label {
+    font-size: .82rem; font-weight: 600; color: #555;
+    margin-bottom: 6px; display: block;
+  }
+  .form-input-styled {
+    width: 100%; padding: 10px 14px;
+    border: 1.5px solid #e8e8e8; border-radius: 8px;
+    font-size: .9rem; color: #333; outline: none;
+    transition: border-color .2s;
+    font-family: 'Inter', sans-serif;
+  }
+  .form-input-styled:focus { border-color: var(--bms-red); }
+  .booking-ticket {
+    background: #fff; border-radius: 12px;
+    border: 1.5px solid #f0f0f0;
+    overflow: hidden; transition: transform .2s, box-shadow .2s;
+  }
+  .booking-ticket:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,.1); }
+  .ticket-head {
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    padding: 14px 18px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .ticket-movie { color: #fff; font-family: 'Poppins', sans-serif; font-weight: 700; font-size: .95rem; }
+  .ticket-status {
+    background: #28a745; color: #fff;
+    border-radius: 50px; padding: 2px 10px;
+    font-size: .72rem; font-weight: 600;
+  }
+  .ticket-body { padding: 14px 18px; }
+  .ticket-row {
+    display: flex; justify-content: space-between;
+    margin-bottom: 8px; font-size: .82rem;
+  }
+  .ticket-row .lbl { color: #999; }
+  .ticket-row .val { color: #333; font-weight: 500; }
+  .ticket-divider {
+    border: none; border-top: 1.5px dashed #eee; margin: 10px 0;
+  }
+  .no-bookings {
+    text-align: center; padding: 60px 24px;
+  }
+  .no-bookings i { font-size: 3.5rem; color: #ddd; display: block; margin-bottom: 16px; }
+  .no-bookings h5 { color: #888; font-weight: 600; margin-bottom: 6px; }
+  .no-bookings p { color: #bbb; font-size: .88rem; }
+  .stat-box {
+    background: #fff; border-radius: 12px; padding: 20px;
+    box-shadow: 0 2px 12px rgba(0,0,0,.06);
+    text-align: center;
+  }
+  .stat-box .num {
+    font-family: 'Poppins', sans-serif;
+    font-size: 1.8rem; font-weight: 700; color: var(--bms-red);
+    line-height: 1;
+  }
+  .stat-box .lbl { font-size: .78rem; color: #888; margin-top: 4px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Profile hero -->
+<div class="profile-hero">
+  <div class="container">
+    <div class="d-flex align-items-center gap-4 flex-wrap">
+      <div class="avatar-ring">{{ user.username|first|upper }}</div>
+      <div>
+        <div class="profile-name">{{ user.username }}</div>
+        <div class="profile-email">{{ user.email|default:"No email set" }}</div>
+        <div class="profile-badge"><i class="fas fa-circle me-1" style="color:#28a745;font-size:.6rem;"></i>Active Member</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container profile-body">
+  <!-- Stats row -->
+  <div class="row g-3 mb-4">
+    <div class="col-4">
+      <div class="stat-box">
+        <div class="num">{{ bookings|length }}</div>
+        <div class="lbl">Total Bookings</div>
+      </div>
+    </div>
+    <div class="col-4">
+      <div class="stat-box">
+        <div class="num">{{ bookings|length }}</div>
+        <div class="lbl">Movies Watched</div>
+      </div>
+    </div>
+    <div class="col-4">
+      <div class="stat-box">
+        <div class="num" style="font-size:1.2rem;">₹{{ total_spent|floatformat:0 }}</div>
+        <div class="lbl">Total Spent</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Left: update form -->
+    <div class="col-lg-4">
+      <div class="section-card">
+        <div class="card-head">
+          <div class="icon" style="background:#fff0f0;color:var(--bms-red);"><i class="fas fa-user-edit"></i></div>
+          <h5>Edit Profile</h5>
+        </div>
+        <div class="card-body-inner">
+          <form method="POST">
+            {% csrf_token %}
+            {% for field in u_form %}
+            <div class="mb-3">
+              <label class="form-field-label">{{ field.label }}</label>
+              <input name="{{ field.html_name }}"
+                     type="{% if field.name == 'email' %}email{% else %}text{% endif %}"
+                     class="form-input-styled"
+                     value="{{ field.value|default:'' }}"
+                     placeholder="{{ field.label }}">
+              {% for error in field.errors %}
+              <div style="color:#dc3545;font-size:.76rem;margin-top:3px;">{{ error }}</div>
+              {% endfor %}
+            </div>
+            {% endfor %}
+            <button type="submit" class="btn btn-bms w-100 mt-2" style="border-radius:8px;height:42px;">
+              <i class="fas fa-save me-2"></i>Save Changes
+            </button>
+          </form>
+          <hr style="border-color:#f0f0f0;margin:20px 0;">
+          <a href="{% url 'password_reset' %}"
+             class="btn btn-outline-secondary w-100" style="border-radius:8px;height:42px;font-size:.88rem;">
+            <i class="fas fa-key me-2"></i>Change Password
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: bookings -->
+    <div class="col-lg-8">
+      <div class="section-card">
+        <div class="card-head">
+          <div class="icon" style="background:#f0fff4;color:#28a745;"><i class="fas fa-ticket-alt"></i></div>
+          <h5>My Tickets <span style="background:#f0f0f0;color:#888;border-radius:50px;padding:2px 10px;font-size:.75rem;font-weight:500;margin-left:6px;">{{ bookings|length }}</span></h5>
+        </div>
+        <div class="card-body-inner" style="padding:16px;">
+          {% if bookings %}
+          <div class="row g-3">
+            {% for booking in bookings %}
+            <div class="col-sm-6">
+              <div class="booking-ticket">
+                <div class="ticket-head">
+                  <span class="ticket-movie">{{ booking.movie.name }}</span>
+                  <span class="ticket-status"><i class="fas fa-check me-1"></i>Confirmed</span>
+                </div>
+                <div class="ticket-body">
+                  <div class="ticket-row">
+                    <span class="lbl"><i class="fas fa-map-marker-alt me-1"></i>Theater</span>
+                    <span class="val">{{ booking.theater.name }}</span>
+                  </div>
+                  <div class="ticket-row">
+                    <span class="lbl"><i class="fas fa-chair me-1"></i>Seat</span>
+                    <span class="val" style="background:#e8f5e9;color:#2e7d32;border-radius:4px;padding:1px 8px;">{{ booking.seat.seat_number }}</span>
+                  </div>
+                  <hr class="ticket-divider">
+                  <div class="ticket-row">
+                    <span class="lbl"><i class="far fa-calendar me-1"></i>Booked</span>
+                    <span class="val">{{ booking.booked_at|date:"d M Y" }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="no-bookings">
+            <i class="fas fa-ticket-alt"></i>
+            <h5>No tickets yet</h5>
+            <p>You haven't booked any movies yet. Time for a movie night!</p>
+            <a href="/movies" class="btn btn-bms mt-2" style="border-radius:8px;padding:10px 28px;">
+              <i class="fas fa-film me-2"></i>Browse Movies
+            </a>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

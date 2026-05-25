@@ -1,0 +1,212 @@
+{% extends "users/basic.html" %}
+{% block content %}
+
+<style>
+  body { font-family: Arial, sans-serif; }
+
+  /* ── Seat states ───────────────────────────────────────────── */
+  .seat {
+    width: 36px; height: 36px;
+    border: 2px solid #28a745;
+    margin: 4px;
+    text-align: center; line-height: 32px;
+    cursor: pointer;
+    border-radius: 6px;
+    font-size: 11px; font-weight: 600;
+    transition: background-color 0.2s, color 0.2s, transform 0.1s;
+    user-select: none;
+  }
+  .seat:hover { background-color: #28a745; color: white; transform: scale(1.1); }
+
+  /* Selected by current user */
+  .seat.selected { background-color: #0d6efd; border-color: #0d6efd; color: white; }
+  .seat.selected:hover { background-color: #0b5ed7; }
+
+  /* Permanently booked */
+  .seat.sold { background-color: #ccc; border-color: #aaa; color: #666; cursor: not-allowed; }
+  .seat.sold:hover { transform: none; background-color: #ccc; color: #666; }
+
+  /* Temporarily reserved by another user */
+  .seat.reserved-other {
+    background-color: #fff3cd; border-color: #ffc107;
+    color: #856404; cursor: not-allowed;
+  }
+  .seat.reserved-other:hover { transform: none; background-color: #fff3cd; color: #856404; }
+
+  /* Reserved by me (already in basket) */
+  .seat.reserved-me { background-color: #cff4fc; border-color: #0dcaf0; color: #055160; }
+
+  .screen {
+    margin: 20px 0; background-color: #ccc;
+    height: 50px; text-align: center; line-height: 50px; color: #666;
+    border-radius: 4px; letter-spacing: 2px; font-size: 13px;
+  }
+</style>
+
+<div class="container mt-5">
+  <div class="row">
+    <div class="col-lg-9 mx-auto">
+
+      <!-- Movie / Theater info card -->
+      <div class="card mb-4 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center flex-wrap">
+            <div>
+              <h4 class="card-title mb-1">{{ theaters.movie.name }}</h4>
+              <p class="card-text text-muted mb-0">
+                <i class="fas fa-map-marker-alt me-1"></i>{{ theaters.name }}
+                &nbsp;|&nbsp;
+                <i class="fas fa-clock me-1"></i>{{ theaters.time }}
+              </p>
+            </div>
+            <div class="mt-2 mt-sm-0">
+              <span class="badge bg-secondary me-1">2D</span>
+              <span class="badge bg-secondary me-1">3D</span>
+              <span class="badge bg-secondary me-1">IMAX 3D</span>
+              <span class="badge bg-primary">{{ seats|length }} seats</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Error message -->
+      {% if error %}
+      <div class="alert alert-danger d-flex align-items-center mb-4" role="alert">
+        <i class="fas fa-exclamation-circle me-2"></i>
+        <span>{{ error }}</span>
+      </div>
+      {% endif %}
+
+      <!-- Seat map card -->
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title text-center mb-3">Select Your Seats</h5>
+          <div class="screen">🎬 All eyes this way please!</div>
+
+          <!--
+            CONCURRENCY NOTE:
+            This form POSTs to reserve_seats, which runs inside
+            transaction.atomic() + select_for_update() to prevent double-booking.
+            Yellow seats are temporarily held by other users (2-min lock).
+            They cannot be selected and are released automatically by the
+            background scheduler when their timer expires.
+          -->
+          <form method="POST" action="{% url 'reserve_seats' theaters.id %}" id="seatForm">
+            {% csrf_token %}
+
+            <div class="d-flex justify-content-center flex-wrap mb-4" id="seatGrid">
+              {% for seat in seats %}
+                {% if seat.is_booked %}
+                  <div class="seat sold" title="Seat {{ seat.seat_number }} — permanently booked">
+                    {{ seat.seat_number }}
+                  </div>
+
+                {% elif seat.reserved_by_other %}
+                  <div class="seat reserved-other"
+                       title="Seat {{ seat.seat_number }} — temporarily held by another user">
+                    {{ seat.seat_number }}
+                  </div>
+
+                {% elif seat.reserved_by_me %}
+                  <div class="seat reserved-me"
+                       title="Seat {{ seat.seat_number }} — already in your reservation">
+                    <input type="checkbox" name="seats" value="{{ seat.id }}"
+                           class="d-none seat-checkbox"
+                           id="seat-{{ seat.id }}" checked>
+                    <label for="seat-{{ seat.id }}"
+                           class="w-100 h-100 d-flex align-items-center justify-content-center mb-0"
+                           style="cursor:pointer;">
+                      {{ seat.seat_number }}
+                    </label>
+                  </div>
+
+                {% else %}
+                  <div class="seat" title="Seat {{ seat.seat_number }} — available">
+                    <input type="checkbox" name="seats" value="{{ seat.id }}"
+                           class="d-none seat-checkbox"
+                           id="seat-{{ seat.id }}">
+                    <label for="seat-{{ seat.id }}"
+                           class="w-100 h-100 d-flex align-items-center justify-content-center mb-0"
+                           style="cursor:pointer;">
+                      {{ seat.seat_number }}
+                    </label>
+                  </div>
+                {% endif %}
+              {% endfor %}
+            </div>
+
+            <!-- Legend -->
+            <div class="d-flex justify-content-center flex-wrap gap-3 mb-4">
+              <div class="d-flex align-items-center gap-1">
+                <div class="seat mb-0" style="cursor:default;width:22px;height:22px;line-height:18px;"></div>
+                <small>Available</small>
+              </div>
+              <div class="d-flex align-items-center gap-1">
+                <div class="seat selected mb-0" style="cursor:default;width:22px;height:22px;line-height:18px;"></div>
+                <small>Selected</small>
+              </div>
+              <div class="d-flex align-items-center gap-1">
+                <div class="seat reserved-other mb-0" style="cursor:default;width:22px;height:22px;line-height:18px;"></div>
+                <small>Held (2 min)</small>
+              </div>
+              <div class="d-flex align-items-center gap-1">
+                <div class="seat sold mb-0" style="cursor:default;width:22px;height:22px;line-height:18px;"></div>
+                <small>Sold</small>
+              </div>
+            </div>
+
+            <!-- Selection summary -->
+            <p class="text-center text-muted mb-3" id="selectionSummary">No seats selected</p>
+
+            <div class="text-center">
+              <button type="submit" id="reserveBtn"
+                      class="btn btn-success btn-lg px-5" disabled>
+                <i class="fas fa-lock me-2"></i>Hold Seats for 2 Minutes
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <p class="text-center text-muted mt-3" style="font-size:13px;">
+        <i class="fas fa-info-circle me-1"></i>
+        Selected seats are locked for <strong>2 minutes</strong> while you confirm.
+        Yellow seats are temporarily held by other users.
+      </p>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  const checkboxes = document.querySelectorAll('.seat-checkbox');
+  const reserveBtn = document.getElementById('reserveBtn');
+  const summary    = document.getElementById('selectionSummary');
+
+  function updateUI() {
+    const selected = [...checkboxes].filter(c => c.checked);
+    const count = selected.length;
+
+    // Sync the visual selected class
+    checkboxes.forEach(cb => {
+      const seatDiv = cb.closest('.seat');
+      if (seatDiv) seatDiv.classList.toggle('selected', cb.checked);
+    });
+
+    if (count === 0) {
+      summary.textContent = 'No seats selected';
+      reserveBtn.disabled = true;
+    } else {
+      const nums = selected.map(cb =>
+        cb.closest('.seat').querySelector('label').textContent.trim()
+      );
+      summary.textContent = `${count} seat${count > 1 ? 's' : ''} selected: ${nums.join(', ')}`;
+      reserveBtn.disabled = false;
+    }
+  }
+
+  checkboxes.forEach(cb => cb.addEventListener('change', updateUI));
+  updateUI(); // initialise for pre-checked (reserved-by-me) seats
+</script>
+
+{% endblock %}

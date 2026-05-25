@@ -1,0 +1,67 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content %}
+<!-- Quick stats for the admin landing page -->
+<style>
+  .bms-stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+  .bms-stat {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 18px 20px;
+    text-align: center;
+  }
+  .bms-stat .num {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--bms-red);
+    display: block;
+    line-height: 1;
+  }
+  .bms-stat .lbl {
+    font-size: .75rem;
+    color: #888;
+    margin-top: 6px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+  }
+  .bms-quick-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+  .bms-quick-link {
+    background: #0f172a;
+    color: #fff !important;
+    border-radius: 8px;
+    padding: 10px 18px;
+    font-size: .85rem;
+    font-weight: 600;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    transition: background .2s;
+  }
+  .bms-quick-link:hover { background: var(--bms-red); color: #fff !important; }
+</style>
+
+<div class="bms-quick-links">
+  <a href="/movies/admin/analytics/" class="bms-quick-link">📊 Analytics Dashboard</a>
+  <a href="/movies/admin/analytics/?refresh=1" class="bms-quick-link">🔄 Refresh Analytics</a>
+  <a href="/admin/movies/movie/add/" class="bms-quick-link">➕ Add Movie</a>
+  <a href="/admin/movies/theater/add/" class="bms-quick-link">🎭 Add Theater</a>
+  <a href="/admin/movies/genre/add/" class="bms-quick-link">🏷 Add Genre</a>
+  <a href="/admin/movies/seat/add/" class="bms-quick-link">💺 Add Seats</a>
+  <a href="/" class="bms-quick-link">🌐 View Site</a>
+</div>
+
+{{ block.super }}
+{% endblock %}

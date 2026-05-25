@@ -1,0 +1,347 @@
+{% extends "users/basic.html" %}
+{% block content %}
+<style>
+  .countdown-ring { position:relative; width:120px; height:120px; margin:0 auto; }
+  .countdown-ring svg { transform:rotate(-90deg); }
+  .countdown-ring circle.track { fill:none; stroke:#e9ecef; stroke-width:8; }
+  .countdown-ring circle.progress {
+    fill:none; stroke:#28a745; stroke-width:8; stroke-linecap:round;
+    stroke-dasharray:314; stroke-dashoffset:0;
+    transition:stroke-dashoffset 1s linear, stroke 0.5s;
+  }
+  .countdown-ring circle.progress.warning { stroke:#ffc107; }
+  .countdown-ring circle.progress.danger  { stroke:#dc3545; }
+  .countdown-label { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:22px; font-weight:700; }
+  .seat-chip { display:inline-block; padding:4px 12px; background:#e9f7ef; border:1px solid #28a745; border-radius:20px; font-weight:600; margin:3px; }
+  #expiredOverlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:9999; align-items:center; justify-content:center; }
+  #expiredOverlay.show { display:flex; }
+  #payOverlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:9998; align-items:center; justify-content:center; }
+  #payOverlay.show { display:flex; }
+</style>
+
+<!-- Expired overlay -->
+<div id="expiredOverlay">
+  <div class="bg-white rounded-3 p-4 text-center shadow-lg" style="max-width:380px">
+    <i class="fas fa-clock fa-3x text-danger mb-3"></i>
+    <h5>Reservation Expired</h5>
+    <p class="text-muted">Your 2-minute hold has ended. Please select seats again.</p>
+    <a href="{% url 'book_seats' theater.id %}" class="btn btn-primary">Select Again</a>
+  </div>
+</div>
+
+<!-- Processing overlay -->
+<div id="payOverlay">
+  <div class="bg-white rounded-3 p-4 text-center shadow-lg" style="max-width:320px">
+    <div class="spinner-border text-success mb-3" role="status"></div>
+    <p class="mb-0 fw-semibold">Processing payment…</p>
+    <small class="text-muted">Please do not close this window.</small>
+  </div>
+</div>
+
+<div class="container mt-5">
+  <div class="row">
+    <div class="col-lg-7 mx-auto">
+
+      <div class="text-center mb-4">
+        <h3 class="fw-bold">Confirm Your Booking</h3>
+        <p class="text-muted">Seats held for <strong>{{ timeout_minutes }} minutes</strong>. Pay before the timer runs out.</p>
+      </div>
+
+      <!-- Countdown ring -->
+      <div class="card shadow-sm mb-4">
+        <div class="card-body text-center py-4">
+          <p class="text-muted mb-2" style="font-size:12px;text-transform:uppercase;letter-spacing:1px;">Time remaining</p>
+          <div class="countdown-ring mb-2">
+            <svg width="120" height="120" viewBox="0 0 120 120">
+              <circle class="track" cx="60" cy="60" r="50"></circle>
+              <circle class="progress" cx="60" cy="60" r="50" id="progressCircle"></circle>
+            </svg>
+            <div class="countdown-label" id="countdownLabel">{{ seconds_remaining }}</div>
+          </div>
+          <p class="text-muted mb-0" style="font-size:12px;">seconds</p>
+        </div>
+      </div>
+
+      <!-- Booking summary -->
+      <div class="card shadow-sm mb-4">
+        <div class="card-body">
+          <h5 class="card-title mb-3"><i class="fas fa-ticket-alt me-2 text-primary"></i>Booking Summary</h5>
+          <table class="table table-borderless mb-0">
+            <tr><td class="text-muted">Movie</td><td class="fw-semibold">{{ theater.movie.name }}</td></tr>
+            <tr><td class="text-muted">Theater</td><td>{{ theater.name }}</td></tr>
+            <tr><td class="text-muted">Show time</td><td>{{ theater.time }}</td></tr>
+            <tr>
+              <td class="text-muted">Seats</td>
+              <td>{% for res in reservations %}<span class="seat-chip">{{ res.seat.seat_number }}</span>{% endfor %}</td>
+            </tr>
+            <tr><td class="text-muted">Amount</td><td class="fw-bold text-success fs-5">₹{{ amount_inr|floatformat:0 }}</td></tr>
+          </table>
+        </div>
+      </div>
+
+      <!-- Security notice -->
+      <div class="alert alert-info d-flex align-items-start mb-4" style="font-size:13px;">
+        <i class="fas fa-shield-alt me-2 mt-1 text-info"></i>
+        <span>
+          Payments are processed by <strong>Razorpay</strong>. Your card details never reach
+          our servers. All transactions are secured with 256-bit encryption and verified
+          server-side using HMAC-SHA256 signatures.
+        </span>
+      </div>
+
+      <!-- Payment error card (hidden by default) -->
+      <div id="payError" class="d-none mb-3" role="alert">
+        <div style="background:#fff;border:1.5px solid #fee2e2;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(220,38,38,.1);">
+          <div style="background:#fee2e2;padding:12px 18px;display:flex;align-items:center;gap:10px;">
+            <span style="font-size:1.3rem;">⚠️</span>
+            <span style="font-family:'Poppins',sans-serif;font-weight:700;color:#991b1b;font-size:.95rem;" id="payErrorTitle">
+              Payment could not be processed
+            </span>
+          </div>
+          <div style="padding:14px 18px;">
+            <p style="color:#374151;font-size:.88rem;margin-bottom:10px;" id="payErrorMsg">
+              We were unable to connect to the payment server. Please try again in a moment.
+            </p>
+            <div style="background:#f9fafb;border-radius:8px;padding:10px 14px;display:flex;align-items:flex-start;gap:8px;">
+              <span style="color:#6b7280;font-size:1rem;flex-shrink:0;">ℹ️</span>
+              <p style="color:#6b7280;font-size:.78rem;margin:0;line-height:1.5;" id="payErrorHint">
+                No amount has been charged. Your seats are still held for the remaining time.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pay button -->
+      <!--
+        The button does NOT submit a form directly. Instead, JS:
+        1. POSTs to create_payment (server creates Razorpay order).
+        2. Opens the Razorpay checkout modal.
+        3. On success, POSTs the returned IDs + signature to payment_callback
+           for server-side HMAC verification before any booking is created.
+        The amount the user pays is taken from our DB — the client cannot
+        manipulate it.
+      -->
+      <div class="d-grid gap-2">
+        <button type="button" class="btn btn-success btn-lg" id="payBtn">
+          <i class="fas fa-lock me-2"></i>Pay ₹{{ amount_inr|floatformat:0 }} Securely
+        </button>
+        <a href="{% url 'book_seats' theater.id %}" class="btn btn-outline-secondary" id="cancelBtn">
+          Cancel &amp; Release Seats
+        </a>
+      </div>
+
+      <p class="text-center text-muted mt-3" style="font-size:12px;">
+        <i class="fas fa-info-circle me-1"></i>
+        Clicking Pay opens the Razorpay checkout. Your seats are released automatically if payment is not completed in time.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- Razorpay checkout SDK (official CDN) -->
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+<script>
+  // ── Constants from Django context ─────────────────────────────────────────
+  const TOTAL_SECONDS   = {{ seconds_remaining }};
+  const RELEASE_URL     = "{% url 'release_seats' theater.id %}";
+  const CREATE_URL      = "{% url 'create_payment' theater.id %}";
+  const CALLBACK_URL    = "{% url 'payment_callback' theater.id %}";
+  const FAILED_URL      = "{% url 'payment_failed' %}";
+  const SEAT_SELECT_URL = "{% url 'book_seats' theater.id %}";
+  const CSRF_TOKEN      = "{{ csrf_token }}";
+  const USER_NAME       = "{{ request.user.get_full_name|default:request.user.username }}";
+  const USER_EMAIL      = "{{ request.user.email }}";
+  const CIRCUMFERENCE   = 314;
+
+  // ── DOM refs ──────────────────────────────────────────────────────────────
+  const circle     = document.getElementById('progressCircle');
+  const label      = document.getElementById('countdownLabel');
+  const expOverlay = document.getElementById('expiredOverlay');
+  const payOverlay = document.getElementById('payOverlay');
+  const payBtn     = document.getElementById('payBtn');
+  const cancelBtn  = document.getElementById('cancelBtn');
+  const errBox     = document.getElementById('payError');
+
+  let secondsLeft = TOTAL_SECONDS;
+  let released    = false;
+  let paying      = false;
+
+  // ── Countdown ─────────────────────────────────────────────────────────────
+  function updateRing(secs) {
+    const fraction = secs / TOTAL_SECONDS;
+    circle.style.strokeDashoffset = CIRCUMFERENCE * (1 - fraction);
+    circle.classList.remove('warning', 'danger');
+    if (fraction <= 0.25) circle.classList.add('danger');
+    else if (fraction <= 0.5) circle.classList.add('warning');
+    label.textContent = secs;
+  }
+
+  updateRing(secondsLeft);
+  const timer = setInterval(() => {
+    secondsLeft -= 1;
+    updateRing(secondsLeft);
+    if (secondsLeft <= 0) {
+      clearInterval(timer);
+      if (!paying) {
+        releaseSilently();
+        payBtn.disabled = true;
+        expOverlay.classList.add('show');
+      }
+    }
+  }, 1000);
+
+  // ── Silent release (page-unload / timer-expiry) ───────────────────────────
+  function releaseSilently() {
+    if (released) return;
+    released = true;
+    const body = new URLSearchParams({csrfmiddlewaretoken: CSRF_TOKEN});
+    navigator.sendBeacon
+      ? navigator.sendBeacon(RELEASE_URL, body)
+      : fetch(RELEASE_URL, {method:'POST', keepalive:true, body,
+          headers:{'X-CSRFToken':CSRF_TOKEN,'Content-Type':'application/x-www-form-urlencoded'}});
+  }
+
+  window.addEventListener('beforeunload', () => { if (!paying) releaseSilently(); });
+
+  cancelBtn.addEventListener('click', e => {
+    e.preventDefault();
+    releaseSilently();
+    window.location.href = SEAT_SELECT_URL;
+  });
+
+  // ── Payment flow ──────────────────────────────────────────────────────────
+  payBtn.addEventListener('click', async () => {
+    if (secondsLeft <= 0) return;
+    payBtn.disabled = true;
+    errBox.classList.add('d-none');
+
+    // Step 1: Create Razorpay order on the server
+    let orderData;
+    try {
+      const res = await fetch(CREATE_URL, {
+        method: 'POST',
+        headers: {'X-CSRFToken': CSRF_TOKEN, 'Content-Type': 'application/json'},
+        body: JSON.stringify({}),
+      });
+      orderData = await res.json();
+      if (!res.ok || orderData.error) {
+        let msg = orderData.error || 'Could not create payment order.';
+        // Give a developer-friendly hint for the most common setup mistake
+        if (msg.toLowerCase().includes('authentication') || msg.toLowerCase().includes('unauthorized')) {
+          msg = 'Razorpay API key not configured. Open bookmyseat/settings.py and replace RAZORPAY_KEY_ID / RAZORPAY_KEY_SECRET with your test keys from https://dashboard.razorpay.com/app/keys';
+        }
+        throw new Error(msg);
+      }
+    } catch (err) {
+      // Show user-friendly error instead of raw technical message
+      const raw = err.message || '';
+      let title = 'Payment server unavailable';
+      let msg   = 'We could not reach the payment server right now. Please try again in a moment.';
+      let hint  = 'No amount has been charged. Your seats are still held.';
+
+      if (raw.toLowerCase().includes('key') || raw.toLowerCase().includes('auth') || raw.toLowerCase().includes('unauthorized')) {
+        title = 'Payment not configured';
+        msg   = 'The payment gateway is not set up yet. This feature will be available shortly.';
+        hint  = 'This is a setup issue — no payment has been attempted. Contact support if this persists.';
+      } else if (raw.toLowerCase().includes('network') || raw.toLowerCase().includes('fetch') || raw.toLowerCase().includes('failed')) {
+        title = 'Network issue';
+        msg   = 'Could not connect to the payment server. Please check your internet connection and try again.';
+        hint  = 'No amount has been charged. Your seats are still held for the remaining time.';
+      } else if (raw.toLowerCase().includes('expired') || raw.toLowerCase().includes('reservation')) {
+        title = 'Seat reservation expired';
+        msg   = 'Your seat hold has expired. Please go back and select your seats again.';
+        hint  = 'Seats are released automatically after 2 minutes to keep availability fair.';
+      }
+
+      document.getElementById('payErrorTitle').textContent = title;
+      document.getElementById('payErrorMsg').textContent   = msg;
+      document.getElementById('payErrorHint').textContent  = hint;
+      errBox.classList.remove('d-none');
+      payBtn.disabled = false;
+      return;
+    }
+
+    // Step 2: Open Razorpay checkout modal
+    paying = true;
+    const options = {
+      key:         orderData.key_id,
+      amount:      orderData.amount,
+      currency:    orderData.currency,
+      order_id:    orderData.order_id,
+      name:        'BookMySeat',
+      description: `${orderData.movie_name} — ${orderData.theater_name}`,
+      prefill:     { name: USER_NAME, email: USER_EMAIL },
+      theme:       { color: '#28a745' },
+
+      // Step 3: On success, POST payment details to our callback for server-side
+      //         HMAC verification. We NEVER book seats based on this JS event alone.
+      handler: function(response) {
+        payOverlay.classList.add('show');
+        clearInterval(timer);
+
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = CALLBACK_URL;
+
+        const fields = {
+          csrfmiddlewaretoken:  CSRF_TOKEN,
+          razorpay_order_id:   response.razorpay_order_id,
+          razorpay_payment_id: response.razorpay_payment_id,
+          razorpay_signature:  response.razorpay_signature,
+        };
+        for (const [k, v] of Object.entries(fields)) {
+          const inp = document.createElement('input');
+          inp.type = 'hidden'; inp.name = k; inp.value = v;
+          form.appendChild(inp);
+        }
+        document.body.appendChild(form);
+        form.submit();
+      },
+
+      modal: {
+        ondismiss: function() {
+          // User closed the modal without paying
+          paying = false;
+          payBtn.disabled = false;
+        }
+      }
+    };
+
+    const rzp = new Razorpay(options);
+
+    // Payment failure inside the modal (wrong card, insufficient funds, etc.)
+    rzp.on('payment.failed', function(response) {
+      paying = false;
+      payBtn.disabled = false;
+      const code = response.error.code || '';
+      const desc = response.error.description || '';
+
+      let title = 'Payment declined';
+      let msg   = desc || 'Your payment was declined. Please try a different card or payment method.';
+      let hint  = 'No amount has been charged. You can try again with a different card.';
+
+      if (code === 'BAD_REQUEST_ERROR' || desc.toLowerCase().includes('insufficient')) {
+        title = 'Insufficient funds';
+        msg   = 'Your card does not have enough balance to complete this transaction.';
+        hint  = 'Please try a different card or add funds to your account.';
+      } else if (desc.toLowerCase().includes('expired')) {
+        title = 'Card expired';
+        msg   = 'The card you used has expired. Please use a different card.';
+      } else if (desc.toLowerCase().includes('network') || code === 'NETWORK_ERROR') {
+        title = 'Network interrupted';
+        msg   = 'The payment was interrupted due to a network issue. Please try again.';
+        hint  = 'No amount has been charged. Your internet connection may be unstable.';
+      }
+
+      document.getElementById('payErrorTitle').textContent = title;
+      document.getElementById('payErrorMsg').textContent   = msg;
+      document.getElementById('payErrorHint').textContent  = hint;
+      errBox.classList.remove('d-none');
+    });
+
+    rzp.open();
+  });
+</script>
+{% endblock %}
