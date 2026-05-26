@@ -152,7 +152,7 @@ class Movie(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, null=True)
 
     class Meta:
-        ordering = ['-created_at']
+        ordering = ['-id']
         indexes  = [models.Index(fields=['name'], name='movie_name_idx')]
 
     def __str__(self):
