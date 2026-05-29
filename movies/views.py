@@ -269,8 +269,15 @@ def reserve_seats(request, theater_id):
     conflicts  = []
     reserved_count = 0
 
-    # Delete ALL previous holds for this user+theater (fresh selection each submit)
-    SeatReservation.objects.filter(user=request.user, theater=theater).delete()
+    # Step 1: Clean up ALL expired reservations system-wide.
+    # Critical on Render free tier — the service spins down after inactivity
+    # and the background scheduler stops running, leaving stale rows in the DB.
+    # This ensures expired holds from before the spindown never block new bookings.
+    SeatReservation.objects.filter(expires_at__lte=now).delete()
+
+    # Step 2: Delete ALL previous holds by this user across ALL theaters
+    # so switching between movies/theaters never leaves ghost reservations.
+    SeatReservation.objects.filter(user=request.user).delete()
 
     for seat_id in selected_seat_ids:
         try:

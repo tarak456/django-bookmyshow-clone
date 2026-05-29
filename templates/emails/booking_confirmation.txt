@@ -1,0 +1,10 @@
+Booking confirmed
+
+Movie: {{ payment.theater.movie.name }}
+Theater: {{ payment.theater.name }}
+Show time: {{ payment.theater.time }}
+Seats: {% for booking in bookings %}{{ booking.seat.seat_number }}{% if not forloop.last %}, {% endif %}{% endfor %}
+Payment ID: {{ payment.razorpay_payment_id }}
+Amount: INR {{ payment.amount_inr|floatformat:2 }}
+
+Please arrive before the show time and keep this email for reference.
