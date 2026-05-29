@@ -35,7 +35,7 @@ class Migration(migrations.Migration):
                 help_text='Paste a YouTube URL or 11-character video ID. Only the ID is stored.',
                 max_length=11,
                 null=True,
-                validators=[movies.models.validate_youtube_url_or_id],
+                validators=[movies.models.validate_youtube_url],
             ),
         ),
     ]
